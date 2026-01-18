@@ -117,6 +117,17 @@ class HomematicIPCollector(object):
             labels=labelnames+detail_labelnames
         )
 
+        metric_rssi_device_value = GaugeMetricFamily(
+            'hmip_rssi_device_value',
+            'RSSI device value',
+            labels=labelnames
+        )
+        metric_rssi_peer_value = GaugeMetricFamily(
+            'hmip_rssi_peer_value',
+            'RSSI peer value',
+            labels=labelnames
+        )
+
         try:
             # Create a new event loop for this thread if one doesn't exist
             try:
@@ -141,6 +152,12 @@ class HomematicIPCollector(object):
                         )
                         if d.lastStatusUpdate:
                              metric_last_status_update.add_metric([g.label, d.label], d.lastStatusUpdate.timestamp())
+                        
+                        # RSSI Metrics
+                        if d.rssiDeviceValue:
+                            metric_rssi_device_value.add_metric([g.label, d.label], d.rssiDeviceValue)
+                        if d.rssiPeerValue:
+                            metric_rssi_peer_value.add_metric([g.label, d.label], d.rssiPeerValue)
 
                         # Specific Metrics
                         if isinstance(d, WallMountedThermostatPro):
@@ -162,6 +179,8 @@ class HomematicIPCollector(object):
             yield metric_temperature_offset
             yield metric_heating_valve_position
             yield metric_humidity_actual
+            yield metric_rssi_device_value
+            yield metric_rssi_peer_value
             yield metric_last_status_update
             yield metric_device_info
 
