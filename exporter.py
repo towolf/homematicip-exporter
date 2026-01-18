@@ -62,7 +62,7 @@ class HomematicIPCollector(object):
         """
         namespace = 'homematicip'
         labelnames = ['room', 'device_label']
-        detail_labelnames = ['device_type', 'firmware_version', 'permanently_reachable']
+        detail_labelnames = ['device_type', 'firmware_version', 'permanently_reachable', 'device_id', 'model_type', 'connection_type']
 
         # Metrics
         version_info = GaugeMetricFamily(
@@ -142,6 +142,31 @@ class HomematicIPCollector(object):
             labels=labelnames+detail_labelnames
         )
 
+        metric_valve_protection_duration = GaugeMetricFamily(
+            'hmip_valve_protection_duration',
+            'Valve Protection Duration',
+            labels=labelnames
+        )
+        metric_valve_protection_switching_interval = GaugeMetricFamily(
+            'hmip_valve_protection_switching_interval',
+            'Valve Protection Switching Interval',
+            labels=labelnames
+        )
+        metric_wind_speed = GaugeMetricFamily(
+            'hmip_wind_speed',
+            'Wind Speed',
+            labels=['weather']
+        )
+        metric_min_temperature = GaugeMetricFamily(
+            'hmip_min_temperature',
+            'Minimum Temperature',
+            labels=['weather']
+        )
+        metric_max_temperature = GaugeMetricFamily(
+            'hmip_max_temperature',
+            'Maximum Temperature',
+            labels=['weather']
+        )
         metric_rssi_device_value = GaugeMetricFamily(
             'hmip_rssi_device_value',
             'RSSI device value',
@@ -163,6 +188,22 @@ class HomematicIPCollector(object):
 
             self.__home_client.get_current_state()
             
+            # Weather Info
+            if self.__home_client.weather:
+                w = self.__home_client.weather
+                if w.temperature:
+                    metric_temperature_actual.add_metric(['weather', 'weather'], w.temperature)
+                if w.humidity:
+                    metric_humidity_actual.add_metric(['weather', 'weather'], w.humidity)
+                if w.vaporAmount:
+                    metric_vapor_amount.add_metric(['weather', 'weather'], w.vaporAmount)
+                if w.windSpeed:
+                    metric_wind_speed.add_metric(['weather'], w.windSpeed)
+                if w.minTemperature:
+                    metric_min_temperature.add_metric(['weather'], w.minTemperature)
+                if w.maxTemperature:
+                    metric_max_temperature.add_metric(['weather'], w.maxTemperature)
+
             # Version Info
             if self.__home_client.currentAPVersion:
                  version_info.add_metric([self.__home_client.currentAPVersion], 1)
@@ -173,7 +214,7 @@ class HomematicIPCollector(object):
                     for d in g.devices:
                         # Device Info
                         metric_device_info.add_metric(
-                            [g.label, d.label, d.deviceType.lower(), d.firmwareVersion, str(d.permanentlyReachable)], 1
+                            [g.label, d.label, d.deviceType.lower(), d.firmwareVersion, str(d.permanentlyReachable), d.id, d.modelType, str(d.connectionType)], 1
                         )
                         if d.lastStatusUpdate:
                              metric_last_status_update.add_metric([g.label, d.label], d.lastStatusUpdate.timestamp())
@@ -207,6 +248,10 @@ class HomematicIPCollector(object):
                             if hasattr(d, 'temperatureOffset') and d.temperatureOffset is not None:
                                 metric_temperature_offset.add_metric([g.label, d.label], d.temperatureOffset)
                         elif isinstance(d, FloorTerminalBlock12):
+                            if hasattr(d, 'valveProtectionDuration') and d.valveProtectionDuration is not None:
+                                metric_valve_protection_duration.add_metric([g.label, d.label], d.valveProtectionDuration)
+                            if hasattr(d, 'valveProtectionSwitchingInterval') and d.valveProtectionSwitchingInterval is not None:
+                                metric_valve_protection_switching_interval.add_metric([g.label, d.label], d.valveProtectionSwitchingInterval)
                             for channel in d.functionalChannels:
                                 if isinstance(channel, FloorTerminalBlockMechanicChannel):
                                     if channel.valvePosition is not None:
@@ -223,6 +268,11 @@ class HomematicIPCollector(object):
             yield metric_unreach
             yield metric_config_pending
             yield metric_duty_cycle
+            yield metric_valve_protection_duration
+            yield metric_valve_protection_switching_interval
+            yield metric_wind_speed
+            yield metric_min_temperature
+            yield metric_max_temperature
             yield metric_rssi_device_value
             yield metric_rssi_peer_value
             yield metric_last_status_update
