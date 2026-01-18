@@ -154,9 +154,9 @@ class HomematicIPCollector(object):
                              metric_last_status_update.add_metric([g.label, d.label], d.lastStatusUpdate.timestamp())
                         
                         # RSSI Metrics
-                        if d.rssiDeviceValue:
+                        if getattr(d, 'rssiDeviceValue', None):
                             metric_rssi_device_value.add_metric([g.label, d.label], d.rssiDeviceValue)
-                        if d.rssiPeerValue:
+                        if getattr(d, 'rssiPeerValue', None):
                             metric_rssi_peer_value.add_metric([g.label, d.label], d.rssiPeerValue)
 
                         # Specific Metrics
