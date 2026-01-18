@@ -7,7 +7,7 @@ import prometheus_client
 from homematicip.home import Home, EventType
 from homematicip.device import WallMountedThermostatPro, TemperatureHumiditySensorWithoutDisplay, \
     TemperatureHumiditySensorOutdoor, TemperatureHumiditySensorDisplay, ShutterContact, HeatingThermostat, \
-    PlugableSwitchMeasuring
+    PlugableSwitch, SwitchMeasuring
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)-15s %(message)s', datefmt="%Y-%m-%d %H:%M:%S")
 
@@ -266,8 +266,8 @@ class Exporter(object):
                         elif isinstance(d, HeatingThermostat):
                             logging.info("Device of type heating")
                             self.__collect_heating_metrics(g.label, d)
-                        elif isinstance(d, PlugableSwitchMeasuring):
-                            logging.info("Device of type PlugableSwitchMeasuring")
+                        elif isinstance(d, SwitchMeasuring):
+                            logging.info("Device of type SwitchMeasuring")
                             self.__collect_power_metrics(g.label, d)
 
         except Exception as e:
