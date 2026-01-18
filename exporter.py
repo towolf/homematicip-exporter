@@ -8,7 +8,7 @@ from prometheus_client.core import GaugeMetricFamily, CounterMetricFamily
 from homematicip.home import Home, EventType
 from homematicip.device import WallMountedThermostatPro, TemperatureHumiditySensorWithoutDisplay, \
     TemperatureHumiditySensorOutdoor, TemperatureHumiditySensorDisplay, ShutterContact, HeatingThermostat, \
-    PlugableSwitch, SwitchMeasuring
+    PlugableSwitch
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)-15s %(message)s', datefmt="%Y-%m-%d %H:%M:%S")
 
@@ -111,11 +111,6 @@ class HomematicIPCollector(object):
             'Device information',
             labels=labelnames+detail_labelnames
         )
-        metric_power_consumption = GaugeMetricFamily(
-            'homematicip_power_consumption',
-            'Power consumption',
-            labels=labelnames
-        )
 
         try:
             self.__home_client.get_current_state()
@@ -150,8 +145,6 @@ class HomematicIPCollector(object):
                             metric_valve_adaption_needed.add_metric([g.label, d.label], d.automaticValveAdaptionNeeded)
                             metric_temperature_offset.add_metric([g.label, d.label], d.temperatureOffset)
                             metric_valve_position.add_metric([g.label, d.label], d.valvePosition)
-                        elif isinstance(d, SwitchMeasuring):
-                            metric_power_consumption.add_metric([g.label, d.label], d.currentPowerConsumption)
             
             yield metric_temperature_actual
             yield metric_temperature_setpoint
@@ -161,7 +154,6 @@ class HomematicIPCollector(object):
             yield metric_humidity_actual
             yield metric_last_status_update
             yield metric_device_info
-            yield metric_power_consumption
 
         except Exception as e:
             logging.warning(
