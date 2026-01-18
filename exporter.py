@@ -6,8 +6,7 @@ import homematicip
 import prometheus_client
 from prometheus_client.core import GaugeMetricFamily, CounterMetricFamily
 from homematicip.home import Home, EventType
-from homematicip.device import WallMountedThermostatPro, TemperatureHumiditySensorWithoutDisplay, \
-    TemperatureHumiditySensorOutdoor, TemperatureHumiditySensorDisplay, ShutterContact, HeatingThermostat, \
+from homematicip.device import WallMountedThermostatPro, TemperatureHumiditySensorDisplay, \
     PlugableSwitch
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)-15s %(message)s', datefmt="%Y-%m-%d %H:%M:%S")
@@ -131,20 +130,13 @@ class HomematicIPCollector(object):
                              metric_last_status_update.add_metric([g.label, d.label], d.lastStatusUpdate.timestamp())
 
                         # Specific Metrics
-                        if isinstance(d, (WallMountedThermostatPro, TemperatureHumiditySensorDisplay,
-                                          TemperatureHumiditySensorWithoutDisplay, TemperatureHumiditySensorOutdoor)):
+                        if isinstance(d, (WallMountedThermostatPro, TemperatureHumiditySensorDisplay)):
                             if d.actualTemperature:
                                 metric_temperature_actual.add_metric([g.label, d.label], d.actualTemperature)
                             if d.setPointTemperature:
                                 metric_temperature_setpoint.add_metric([g.label, d.label], d.setPointTemperature)
                             if d.humidity:
                                 metric_humidity_actual.add_metric([g.label, d.label], d.humidity)
-                        elif isinstance(d, HeatingThermostat):
-                            metric_temperature_actual.add_metric([g.label, d.label], d.valveActualTemperature)
-                            metric_temperature_setpoint.add_metric([g.label, d.label], d.setPointTemperature)
-                            metric_valve_adaption_needed.add_metric([g.label, d.label], d.automaticValveAdaptionNeeded)
-                            metric_temperature_offset.add_metric([g.label, d.label], d.temperatureOffset)
-                            metric_valve_position.add_metric([g.label, d.label], d.valvePosition)
             
             yield metric_temperature_actual
             yield metric_temperature_setpoint
