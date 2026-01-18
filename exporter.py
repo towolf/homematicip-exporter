@@ -152,18 +152,33 @@ class HomematicIPCollector(object):
             'Valve Protection Switching Interval',
             labels=labelnames
         )
+        metric_weather_temperature = GaugeMetricFamily(
+            'hmip_weather_temperature',
+            'Weather Temperature',
+            labels=['weather']
+        )
+        metric_weather_humidity = GaugeMetricFamily(
+            'hmip_weather_humidity',
+            'Weather Humidity',
+            labels=['weather']
+        )
+        metric_weather_vapor_amount = GaugeMetricFamily(
+            'hmip_weather_vapor_amount',
+            'Weather Vapor Amount',
+            labels=['weather']
+        )
         metric_wind_speed = GaugeMetricFamily(
-            'hmip_wind_speed',
+            'hmip_weather_wind_speed',
             'Wind Speed',
             labels=['weather']
         )
         metric_min_temperature = GaugeMetricFamily(
-            'hmip_min_temperature',
+            'hmip_weather_min_temperature',
             'Minimum Temperature',
             labels=['weather']
         )
         metric_max_temperature = GaugeMetricFamily(
-            'hmip_max_temperature',
+            'hmip_weather_max_temperature',
             'Maximum Temperature',
             labels=['weather']
         )
@@ -192,11 +207,11 @@ class HomematicIPCollector(object):
             if self.__home_client.weather:
                 w = self.__home_client.weather
                 if w.temperature:
-                    metric_temperature_actual.add_metric(['weather', 'weather'], w.temperature)
+                    metric_weather_temperature.add_metric(['weather'], w.temperature)
                 if w.humidity:
-                    metric_humidity_actual.add_metric(['weather', 'weather'], w.humidity)
+                    metric_weather_humidity.add_metric(['weather'], w.humidity)
                 if w.vaporAmount:
-                    metric_vapor_amount.add_metric(['weather', 'weather'], w.vaporAmount)
+                    metric_weather_vapor_amount.add_metric(['weather'], w.vaporAmount)
                 if w.windSpeed:
                     metric_wind_speed.add_metric(['weather'], w.windSpeed)
                 if w.minTemperature:
@@ -270,6 +285,9 @@ class HomematicIPCollector(object):
             yield metric_duty_cycle
             yield metric_valve_protection_duration
             yield metric_valve_protection_switching_interval
+            yield metric_weather_temperature
+            yield metric_weather_humidity
+            yield metric_weather_vapor_amount
             yield metric_wind_speed
             yield metric_min_temperature
             yield metric_max_temperature
