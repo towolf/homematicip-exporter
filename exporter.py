@@ -47,6 +47,10 @@ class HomematicIPCollector(object):
             config = homematicip.load_config_file(config_file=config_file)
 
         try:
+            # We need an event loop for the async methods in the homematicip library.
+            # Even though we are not using async/await in this exporter, the library
+            # uses asyncio internally (see homematicip/base/homematicip_object.py _run_non_async)
+            # and expects a running loop to execute its tasks.
             try:
                 loop = asyncio.get_running_loop()
             except RuntimeError:
