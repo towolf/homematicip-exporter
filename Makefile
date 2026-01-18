@@ -1,8 +1,8 @@
-IMAGE   ?= auhlig/homematicip-exporter
+IMAGE   ?= towolf/homematicip-exporter
 VERSION = $(shell git rev-parse --verify HEAD | head -c 8)
 
 build: clean-build
-	python setup.py sdist
+	python3 setup.py sdist
 
 clean-pyc:
 	find . -name '*.pyc' -exec rm -f {} +
