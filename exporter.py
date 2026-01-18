@@ -4,6 +4,7 @@ import time
 import logging
 import homematicip
 import prometheus_client
+import asyncio
 from prometheus_client.core import GaugeMetricFamily, CounterMetricFamily
 from homematicip.home import Home, EventType
 from homematicip.device import WallMountedThermostatPro, PlugableSwitch, FloorTerminalBlock12
@@ -112,6 +113,13 @@ class HomematicIPCollector(object):
         )
 
         try:
+            # Create a new event loop for this thread if one doesn't exist
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+
             self.__home_client.get_current_state()
             
             # Version Info
