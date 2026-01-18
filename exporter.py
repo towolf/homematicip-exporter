@@ -6,7 +6,8 @@ import homematicip
 import prometheus_client
 from prometheus_client.core import GaugeMetricFamily, CounterMetricFamily
 from homematicip.home import Home, EventType
-from homematicip.device import WallMountedThermostatPro, PlugableSwitch
+from homematicip.device import WallMountedThermostatPro, PlugableSwitch, FloorTerminalBlock12
+from homematicip.base.functionalChannels import FloorTerminalBlockMechanicChannel
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)-15s %(message)s', datefmt="%Y-%m-%d %H:%M:%S")
 
@@ -92,7 +93,7 @@ class HomematicIPCollector(object):
         metric_valve_position = GaugeMetricFamily(
             'hmip_valve_position',
             'the current position of the valve 0.0 = closed, 1.0 max opened',
-            labels=labelnames
+            labels=labelnames + ['channel']
         )
         metric_humidity_actual = GaugeMetricFamily(
             'hmip_humidity_actual',
@@ -136,7 +137,11 @@ class HomematicIPCollector(object):
                                 metric_temperature_setpoint.add_metric([g.label, d.label], d.setPointTemperature)
                             if d.humidity:
                                 metric_humidity_actual.add_metric([g.label, d.label], d.humidity)
-            
+                        elif isinstance(d, FloorTerminalBlock12):
+                            for channel in d.functionalChannels:
+                                if isinstance(channel, FloorTerminalBlockMechanicChannel):
+                                    metric_valve_position.add_metric([g.label, d.label, str(channel.index)], channel.valvePosition)
+
             yield metric_temperature_actual
             yield metric_temperature_setpoint
             yield metric_valve_adaption_needed
