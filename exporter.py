@@ -99,7 +99,7 @@ class HomematicIPCollector(object):
         metric_heating_valve_position = GaugeMetricFamily(
             'hmip_heating_valve_position',
             'the current position of the valve 0.0 = closed, 1.0 max opened',
-            labels=labelnames + ['channel']
+            labels=labelnames + ['channel', 'channel_name']
         )
         metric_humidity_actual = GaugeMetricFamily(
             'hmip_current_humidity_relative',
@@ -154,7 +154,7 @@ class HomematicIPCollector(object):
                             for channel in d.functionalChannels:
                                 if isinstance(channel, FloorTerminalBlockMechanicChannel):
                                     if channel.valvePosition is not None:
-                                        metric_heating_valve_position.add_metric([g.label, d.label, str(channel.index)], channel.valvePosition)
+                                        metric_heating_valve_position.add_metric([g.label, d.label, str(channel.index), channel.label], channel.valvePosition)
 
             yield metric_temperature_actual
             yield metric_temperature_setpoint
