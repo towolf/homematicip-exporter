@@ -70,12 +70,12 @@ class HomematicIPCollector(object):
         )
         
         metric_temperature_actual = GaugeMetricFamily(
-            'hmip_temperature_actual',
+            'hmip_current_temperature_celsius',
             'Actual temperature',
             labels=labelnames
         )
         metric_temperature_setpoint = GaugeMetricFamily(
-            'hmip_temperature_setpoint',
+            'hmip_set_temperature_celsius',
             'Set point temperature',
             labels=labelnames
         )
