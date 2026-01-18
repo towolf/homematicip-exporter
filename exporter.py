@@ -64,48 +64,48 @@ class HomematicIPCollector(object):
 
         # Metrics
         version_info = GaugeMetricFamily(
-            'homematicip_version_info',
+            'hmip_version_info',
             'HomematicIP info',
             labels=['api_version']
         )
         
         metric_temperature_actual = GaugeMetricFamily(
-            'homematicip_temperature_actual',
+            'hmip_temperature_actual',
             'Actual temperature',
             labels=labelnames
         )
         metric_temperature_setpoint = GaugeMetricFamily(
-            'homematicip_temperature_setpoint',
+            'hmip_temperature_setpoint',
             'Set point temperature',
             labels=labelnames
         )
         metric_valve_adaption_needed = GaugeMetricFamily(
-            'homematicip_valve_adaption_needed',
+            'hmip_valve_adaption_needed',
             'must the adaption re-run?',
             labels=labelnames
         )
         metric_temperature_offset = GaugeMetricFamily(
-            'homematicip_temperature_offset',
+            'hmip_temperature_offset',
             'the offset temperature for the thermostat',
             labels=labelnames
         )
         metric_valve_position = GaugeMetricFamily(
-            'homematicip_valve_position',
+            'hmip_valve_position',
             'the current position of the valve 0.0 = closed, 1.0 max opened',
             labels=labelnames
         )
         metric_humidity_actual = GaugeMetricFamily(
-            'homematicip_humidity_actual',
+            'hmip_humidity_actual',
             'Actual Humidity',
             labels=labelnames
         )
         metric_last_status_update = GaugeMetricFamily(
-            'homematicip_last_status_update',
+            'hmip_last_status_update',
             "Device last status update",
             labels=labelnames
         )
         metric_device_info = GaugeMetricFamily(
-            'homematicip_device_info',
+            'hmip_device_info',
             'Device information',
             labels=labelnames+detail_labelnames
         )
