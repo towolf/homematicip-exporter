@@ -47,8 +47,8 @@ class HomematicIPCollector(object):
 
         try:
             self.__home_client = Home()
-            self.__home_client.set_auth_token(config.auth_token)
             self.__home_client.init(config.access_point)
+            self.__home_client.set_auth_token(config.auth_token)
         except Exception as e:
             logging.fatal(
                 "Initializing HomematicIP client failed with: {}".format(str(e))
