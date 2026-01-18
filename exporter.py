@@ -23,7 +23,7 @@ class HomematicIPCollector(object):
 
         :param args: the argparse.Args
         """
-        
+
         self.__home_client = None
         self.__metric_port = int(args.metric_port)
         self.__log_level = int(args.log_level)
@@ -47,6 +47,12 @@ class HomematicIPCollector(object):
             config = homematicip.load_config_file(config_file=config_file)
 
         try:
+            try:
+                loop = asyncio.get_running_loop()
+            except RuntimeError:
+                loop = asyncio.new_event_loop()
+                asyncio.set_event_loop(loop)
+
             self.__home_client = Home()
             self.__home_client.init(config.access_point)
             self.__home_client.set_auth_token(config.auth_token)
@@ -70,7 +76,12 @@ class HomematicIPCollector(object):
             'HomematicIP info',
             labels=['api_version']
         )
-        
+
+        metric_duty_cycle_ratio = GaugeMetricFamily(
+            'hmip_duty_cycle',
+            'The current duty cycle of the access point',
+        )
+
         metric_temperature_actual = GaugeMetricFamily(
             'hmip_current_temperature_celsius',
             'Actual temperature',
@@ -117,7 +128,7 @@ class HomematicIPCollector(object):
             labels=labelnames
         )
         metric_unreach = GaugeMetricFamily(
-            'hmip_unreach',
+            'hmip_unreachable',
             'Unreachable',
             labels=labelnames
         )
@@ -127,7 +138,7 @@ class HomematicIPCollector(object):
             labels=labelnames
         )
         metric_duty_cycle = GaugeMetricFamily(
-            'hmip_duty_cycle',
+            'hmip_duty_cycle_limited',
             'Duty Cycle Reached',
             labels=labelnames
         )
@@ -155,32 +166,32 @@ class HomematicIPCollector(object):
         metric_weather_temperature = GaugeMetricFamily(
             'hmip_weather_temperature',
             'Weather Temperature',
-            labels=['weather']
+            labels=['location']
         )
         metric_weather_humidity = GaugeMetricFamily(
             'hmip_weather_humidity',
             'Weather Humidity',
-            labels=['weather']
+            labels=['location']
         )
         metric_weather_vapor_amount = GaugeMetricFamily(
             'hmip_weather_vapor_amount',
             'Weather Vapor Amount',
-            labels=['weather']
+            labels=['location']
         )
         metric_wind_speed = GaugeMetricFamily(
             'hmip_weather_wind_speed',
             'Wind Speed',
-            labels=['weather']
+            labels=['location']
         )
         metric_min_temperature = GaugeMetricFamily(
             'hmip_weather_min_temperature',
             'Minimum Temperature',
-            labels=['weather']
+            labels=['location']
         )
         metric_max_temperature = GaugeMetricFamily(
             'hmip_weather_max_temperature',
             'Maximum Temperature',
-            labels=['weather']
+            labels=['location']
         )
         metric_rssi_device_value = GaugeMetricFamily(
             'hmip_rssi_device_value',
@@ -202,27 +213,32 @@ class HomematicIPCollector(object):
                 asyncio.set_event_loop(loop)
 
             self.__home_client.get_current_state()
-            
+
             # Weather Info
             if self.__home_client.weather:
                 w = self.__home_client.weather
                 if w.temperature:
-                    metric_weather_temperature.add_metric(['weather'], w.temperature)
+                    metric_weather_temperature.add_metric([self.__home_client.location.city], w.temperature)
                 if w.humidity:
-                    metric_weather_humidity.add_metric(['weather'], w.humidity)
+                    metric_weather_humidity.add_metric([self.__home_client.location.city], w.humidity)
                 if w.vaporAmount:
-                    metric_weather_vapor_amount.add_metric(['weather'], w.vaporAmount)
+                    metric_weather_vapor_amount.add_metric([self.__home_client.location.city], w.vaporAmount)
                 if w.windSpeed:
-                    metric_wind_speed.add_metric(['weather'], w.windSpeed)
+                    metric_wind_speed.add_metric([self.__home_client.location.city], w.windSpeed)
                 if w.minTemperature:
-                    metric_min_temperature.add_metric(['weather'], w.minTemperature)
+                    metric_min_temperature.add_metric([self.__home_client.location.city], w.minTemperature)
                 if w.maxTemperature:
-                    metric_max_temperature.add_metric(['weather'], w.maxTemperature)
+                    metric_max_temperature.add_metric([self.__home_client.location.city], w.maxTemperature)
 
             # Version Info
             if self.__home_client.currentAPVersion:
                  version_info.add_metric([self.__home_client.currentAPVersion], 1)
                  yield version_info
+            
+            # Duty Cycle Info
+            if self.__home_client.dutyCycle:
+                metric_duty_cycle_ratio.add_metric([], self.__home_client.dutyCycle)
+                yield metric_duty_cycle_ratio
 
             for g in self.__home_client.groups:
                 if g.groupType == "META":
@@ -233,7 +249,7 @@ class HomematicIPCollector(object):
                         )
                         if d.lastStatusUpdate:
                              metric_last_status_update.add_metric([g.label, d.label], d.lastStatusUpdate.timestamp())
-                        
+
                         # RSSI Metrics
                         if getattr(d, 'rssiDeviceValue', None):
                             metric_rssi_device_value.add_metric([g.label, d.label], d.rssiDeviceValue)
@@ -302,28 +318,30 @@ class HomematicIPCollector(object):
             )
 
 if __name__ == '__main__':
+    import os
+
     parser = argparse.ArgumentParser(
         description='HomematicIP Prometheus Exporter',
         formatter_class=argparse.ArgumentDefaultsHelpFormatter
     )
     parser.add_argument('--metric-port',
-                        default=8000,
+                        default=os.environ.get('METRIC_PORT', 8000),
                         help='port to expose the metrics on')
     parser.add_argument('--config-file',
-                        default='/etc/homematicip-rest-api/config.ini',
+                        default=os.environ.get('CONFIG_FILE', '/etc/homematicip-rest-api/config.ini'),
                         help='path to the configuration file')
     parser.add_argument('--auth-token',
-                        default=None,
+                        default=os.environ.get('AUTH_TOKEN', None),
                         help='homematic IP auth token')
     parser.add_argument('--access-point',
-                        default=None,
+                        default=os.environ.get('ACCESS_POINT', None),
                         help='homematic IP access point id')
     parser.add_argument('--log-level',
-                        default=30,
+                        default=os.environ.get('LOG_LEVEL', 30),
                         help='log level')
 
     args = parser.parse_args()
-    
+
     # Start up the server to expose the metrics.
     try:
         collector = HomematicIPCollector(args)
