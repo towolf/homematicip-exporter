@@ -6,8 +6,7 @@ import homematicip
 import prometheus_client
 from prometheus_client.core import GaugeMetricFamily, CounterMetricFamily
 from homematicip.home import Home, EventType
-from homematicip.device import WallMountedThermostatPro, TemperatureHumiditySensorDisplay, \
-    PlugableSwitch
+from homematicip.device import WallMountedThermostatPro, PlugableSwitch
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)-15s %(message)s', datefmt="%Y-%m-%d %H:%M:%S")
 
@@ -130,7 +129,7 @@ class HomematicIPCollector(object):
                              metric_last_status_update.add_metric([g.label, d.label], d.lastStatusUpdate.timestamp())
 
                         # Specific Metrics
-                        if isinstance(d, (WallMountedThermostatPro, TemperatureHumiditySensorDisplay)):
+                        if isinstance(d, WallMountedThermostatPro):
                             if d.actualTemperature:
                                 metric_temperature_actual.add_metric([g.label, d.label], d.actualTemperature)
                             if d.setPointTemperature:
