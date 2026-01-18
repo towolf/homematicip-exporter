@@ -153,7 +153,8 @@ class HomematicIPCollector(object):
                         elif isinstance(d, FloorTerminalBlock12):
                             for channel in d.functionalChannels:
                                 if isinstance(channel, FloorTerminalBlockMechanicChannel):
-                                    metric_heating_valve_position.add_metric([g.label, d.label, str(channel.index)], channel.valvePosition)
+                                    if channel.valvePosition is not None:
+                                        metric_heating_valve_position.add_metric([g.label, d.label, str(channel.index)], channel.valvePosition)
 
             yield metric_temperature_actual
             yield metric_temperature_setpoint
