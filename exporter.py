@@ -7,7 +7,7 @@ import prometheus_client
 import asyncio
 from prometheus_client.core import GaugeMetricFamily, CounterMetricFamily
 from homematicip.home import Home, EventType
-from homematicip.device import WallMountedThermostatPro, PlugableSwitch, FloorTerminalBlock12
+from homematicip.device import WallMountedThermostatPro, FloorTerminalBlock12
 from homematicip.base.functionalChannels import FloorTerminalBlockMechanicChannel
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)-15s %(message)s', datefmt="%Y-%m-%d %H:%M:%S")
