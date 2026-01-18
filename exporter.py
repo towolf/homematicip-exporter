@@ -102,7 +102,7 @@ class HomematicIPCollector(object):
             labels=labelnames + ['channel']
         )
         metric_humidity_actual = GaugeMetricFamily(
-            'hmip_humidity_actual',
+            'hmip_current_humidity_relative',
             'Actual Humidity',
             labels=labelnames
         )
