@@ -85,7 +85,7 @@ class HomematicIPCollector(object):
             "connection_type",
         ]
 
-        # Metrics
+        # Home Metrics
         version_info = GaugeMetricFamily(
             "hmip_version_info", "HomematicIP info", labels=["api_version"]
         )
@@ -95,6 +95,26 @@ class HomematicIPCollector(object):
             "The current duty cycle of the access point",
         )
 
+        metric_weather_temperature = GaugeMetricFamily(
+            "hmip_weather_temperature", "Weather Temperature", labels=["location"]
+        )
+        metric_weather_humidity = GaugeMetricFamily(
+            "hmip_weather_humidity", "Weather Humidity", labels=["location"]
+        )
+        metric_weather_vapor_amount = GaugeMetricFamily(
+            "hmip_weather_vapor_amount", "Weather Vapor Amount", labels=["location"]
+        )
+        metric_wind_speed = GaugeMetricFamily(
+            "hmip_weather_wind_speed", "Wind Speed", labels=["location"]
+        )
+        metric_min_temperature = GaugeMetricFamily(
+            "hmip_weather_min_temperature", "Minimum Temperature", labels=["location"]
+        )
+        metric_max_temperature = GaugeMetricFamily(
+            "hmip_weather_max_temperature", "Maximum Temperature", labels=["location"]
+        )
+
+        # Device Metrics
         metric_temperature_actual = GaugeMetricFamily(
             "hmip_current_temperature_celsius", "Actual temperature", labels=labelnames
         )
@@ -150,24 +170,6 @@ class HomematicIPCollector(object):
             "hmip_valve_protection_switching_interval",
             "Valve Protection Switching Interval",
             labels=labelnames,
-        )
-        metric_weather_temperature = GaugeMetricFamily(
-            "hmip_weather_temperature", "Weather Temperature", labels=["location"]
-        )
-        metric_weather_humidity = GaugeMetricFamily(
-            "hmip_weather_humidity", "Weather Humidity", labels=["location"]
-        )
-        metric_weather_vapor_amount = GaugeMetricFamily(
-            "hmip_weather_vapor_amount", "Weather Vapor Amount", labels=["location"]
-        )
-        metric_wind_speed = GaugeMetricFamily(
-            "hmip_weather_wind_speed", "Wind Speed", labels=["location"]
-        )
-        metric_min_temperature = GaugeMetricFamily(
-            "hmip_weather_min_temperature", "Minimum Temperature", labels=["location"]
-        )
-        metric_max_temperature = GaugeMetricFamily(
-            "hmip_weather_max_temperature", "Maximum Temperature", labels=["location"]
         )
         metric_rssi_device_value = GaugeMetricFamily(
             "hmip_rssi_device_value", "RSSI device value", labels=labelnames
