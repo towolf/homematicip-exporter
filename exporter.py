@@ -5,8 +5,8 @@ import logging
 import homematicip
 import prometheus_client
 import asyncio
-from prometheus_client.core import GaugeMetricFamily, CounterMetricFamily
-from homematicip.home import Home, EventType
+from prometheus_client.core import GaugeMetricFamily
+from homematicip.home import Home
 from homematicip.device import WallMountedThermostatPro, FloorTerminalBlock12
 from homematicip.base.functionalChannels import FloorTerminalBlockMechanicChannel
 
@@ -70,7 +70,6 @@ class HomematicIPCollector(object):
         """
         collect discovers all devices and generates metrics
         """
-        namespace = 'homematicip'
         labelnames = ['room', 'device_label']
         detail_labelnames = ['device_type', 'firmware_version', 'permanently_reachable', 'device_id', 'model_type', 'connection_type']
 
@@ -105,11 +104,6 @@ class HomematicIPCollector(object):
             'hmip_temperature_offset',
             'the offset temperature for the thermostat',
             labels=labelnames
-        )
-        metric_valve_position = GaugeMetricFamily(
-            'hmip_valve_position',
-            'the current position of the valve 0.0 = closed, 1.0 max opened',
-            labels=labelnames + ['channel']
         )
         metric_heating_valve_position = GaugeMetricFamily(
             'hmip_heating_valve_position',
