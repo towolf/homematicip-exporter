@@ -12,7 +12,16 @@ env:
   IMAGE_NAME: ${{ github.repository }}
 
 jobs:
+  python-check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/ruff-action@v3
+
   build-and-push:
+    needs: python-check
     runs-on: ubuntu-latest
     permissions:
       contents: read
