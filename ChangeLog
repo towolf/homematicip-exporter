@@ -1,24 +1,18 @@
 CHANGES
 =======
 
-* fork repository and update authorship to Tobias Wolf
-* change Docker image to towolf/homematicip-exporter
-* use python3 instead of python in Makefile
-* simplify README for forked project
-
-Changes since upstream/master:
-
-* refactor weather metrics to use dedicated hmip_weather_* prefix
-* add extended metrics for floor terminal, weather, and device info
-* add vaporAmount, status metrics, and temperatureOffset
-* safely access RSSI attributes using getattr
-* add RSSI device and peer value metrics
-* add channel name label to heating valve position metric
-* rename humidity metric to hmip_current_humidity_relative
-* handle NoneType for valvePosition in FloorTerminalBlock12
-* remove unused PlugableSwitch import
-* add separate metric hmip_heating_valve_position for floor terminal blocks
-* handle missing asyncio event loop in collector threads
+* Update to complete the fork
+* Refactor weather metrics to use dedicated hmip\_weather\_\* prefix
+* feat: add extended metrics for floor terminal, weather, and device info
+* feat: add vaporAmount, status metrics, and temperatureOffset
+* fix: safely access RSSI attributes using getattr
+* feat: add RSSI device and peer value metrics
+* feat: add channel name label to heating valve position metric
+* Refactor: Rename humidity metric to hmip\_current\_humidity\_relative
+* Fix: Handle NoneType for valvePosition in FloorTerminalBlock12
+* Refactor: Remove unused PlugableSwitch import
+* Feat: Add separate metric hmip\_heating\_valve\_position for floor terminal blocks
+* Fix: Handle missing asyncio event loop in collector threads
 * fix initialization order of Home client
 * add support for FALMOT valve positions
 * rename temperature metrics to include unit
@@ -27,10 +21,15 @@ Changes since upstream/master:
 * remove ShutterContact, HeatingThermostat, TemperatureHumiditySensorOutdoor and TemperatureHumiditySensorWithoutDisplay
 * remove SwitchMeasuring code
 * refactor to use on-demand collection
+* restore .travis.yml
 * update dependencies and fix breaking changes
 * update python version to 3.11
-* add unit tests for exporter
-
+* reduce img size; bump dependencies
+* added power consumption meter
+* updated homematicip requirement
+* Add heating thermostat metrics
+* Add Pycharm and IntelliJ to gitignore
+* changelog
 * only report if there's something to report
 * bump homematicip to 0.10.5
 * include events. print default values in help

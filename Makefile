@@ -12,7 +12,7 @@ clean-build:
 	rm -rf build/ dist/ *.egg-info
 
 docker-build:
-	docker build -t $(IMAGE):$(VERSION) .
+	DOCKER_BUILDKIT=1 docker build -t $(IMAGE):$(VERSION) .
 
 docker-push: docker-build
 	docker push $(IMAGE):$(VERSION)
