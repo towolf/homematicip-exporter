@@ -106,6 +106,31 @@ class HomematicIPCollector(object):
             'Actual Humidity',
             labels=labelnames
         )
+        metric_vapor_amount = GaugeMetricFamily(
+            'hmip_vapor_amount',
+            'Vapor Amount',
+            labels=labelnames
+        )
+        metric_low_bat = GaugeMetricFamily(
+            'hmip_low_bat',
+            'Low Battery',
+            labels=labelnames
+        )
+        metric_unreach = GaugeMetricFamily(
+            'hmip_unreach',
+            'Unreachable',
+            labels=labelnames
+        )
+        metric_config_pending = GaugeMetricFamily(
+            'hmip_config_pending',
+            'Configuration Pending',
+            labels=labelnames
+        )
+        metric_duty_cycle = GaugeMetricFamily(
+            'hmip_duty_cycle',
+            'Duty Cycle Reached',
+            labels=labelnames
+        )
         metric_last_status_update = GaugeMetricFamily(
             'hmip_last_status_update',
             "Device last status update",
@@ -159,6 +184,16 @@ class HomematicIPCollector(object):
                         if getattr(d, 'rssiPeerValue', None):
                             metric_rssi_peer_value.add_metric([g.label, d.label], d.rssiPeerValue)
 
+                        # Status Metrics
+                        if getattr(d, 'lowBat', None) is not None:
+                             metric_low_bat.add_metric([g.label, d.label], int(d.lowBat))
+                        if getattr(d, 'unreach', None) is not None:
+                             metric_unreach.add_metric([g.label, d.label], int(d.unreach))
+                        if getattr(d, 'configPending', None) is not None:
+                             metric_config_pending.add_metric([g.label, d.label], int(d.configPending))
+                        if getattr(d, 'dutyCycle', None) is not None:
+                             metric_duty_cycle.add_metric([g.label, d.label], int(d.dutyCycle))
+
                         # Specific Metrics
                         if isinstance(d, WallMountedThermostatPro):
                             if d.actualTemperature:
@@ -167,6 +202,10 @@ class HomematicIPCollector(object):
                                 metric_temperature_setpoint.add_metric([g.label, d.label], d.setPointTemperature)
                             if d.humidity:
                                 metric_humidity_actual.add_metric([g.label, d.label], d.humidity)
+                            if hasattr(d, 'vaporAmount') and d.vaporAmount:
+                                metric_vapor_amount.add_metric([g.label, d.label], d.vaporAmount)
+                            if hasattr(d, 'temperatureOffset') and d.temperatureOffset is not None:
+                                metric_temperature_offset.add_metric([g.label, d.label], d.temperatureOffset)
                         elif isinstance(d, FloorTerminalBlock12):
                             for channel in d.functionalChannels:
                                 if isinstance(channel, FloorTerminalBlockMechanicChannel):
@@ -179,6 +218,11 @@ class HomematicIPCollector(object):
             yield metric_temperature_offset
             yield metric_heating_valve_position
             yield metric_humidity_actual
+            yield metric_vapor_amount
+            yield metric_low_bat
+            yield metric_unreach
+            yield metric_config_pending
+            yield metric_duty_cycle
             yield metric_rssi_device_value
             yield metric_rssi_peer_value
             yield metric_last_status_update
