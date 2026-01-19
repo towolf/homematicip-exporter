@@ -73,7 +73,9 @@ class HomematicIPCollector(object):
             )
             await self.__home_client.get_current_state_async()
             self.__home_client.onEvent += self.__process_event
-            await self.__home_client.enable_events(additional_message_handler=self.__process_raw_message)
+            await self.__home_client.enable_events(
+                additional_message_handler=self.__process_raw_message
+            )
             await self.__periodic_collection()
         except Exception as e:
             logging.fatal(
@@ -83,7 +85,9 @@ class HomematicIPCollector(object):
 
     def __process_event(self, event_list):
         for event in event_list:
-            logging.info("EventType: {} Data: {}".format(event["eventType"], event["data"]))
+            logging.info(
+                "EventType: {} Data: {}".format(event["eventType"], event["data"])
+            )
 
             try:
                 event_type = event["eventType"]
@@ -95,19 +99,16 @@ class HomematicIPCollector(object):
                 _type = ""
 
                 if hasattr(obj, "id"):
-                     _id = obj.id
+                    _id = obj.id
                 if hasattr(obj, "label"):
-                     _label = obj.label
+                    _label = obj.label
                 if hasattr(obj, "modelType"):
-                     _type = obj.modelType
+                    _type = obj.modelType
                 elif hasattr(obj, "groupType"):
-                     _type = obj.groupType
+                    _type = obj.groupType
 
                 self.__event_counter.labels(
-                    event_type=event_type,
-                    id=_id,
-                    label=_label,
-                    type=_type
+                    event_type=event_type, id=_id, label=_label, type=_type
                 ).inc()
 
             except Exception as e:
