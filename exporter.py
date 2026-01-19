@@ -5,6 +5,7 @@ import homematicip
 import prometheus_client
 import asyncio
 import json
+from prometheus_client import Counter
 from prometheus_client.core import GaugeMetricFamily
 from homematicip.async_home import AsyncHome
 from homematicip.device import WallMountedThermostatPro, FloorTerminalBlock12
@@ -41,6 +42,15 @@ class HomematicIPCollector(object):
 
         self.__load_config(args.config_file, args.auth_token, args.access_point)
         self.__home_client = AsyncHome()
+        self.__event_counter = Counter(
+            "hmip_websocket_events_total",
+            "Number of events received from HomematicIP WebSocket",
+            ["type", "id", "label"],
+        )
+        self.__event_byte_counter = Counter(
+            "hmip_websocket_events_bytes_total",
+            "Total bytes received from HomematicIP WebSocket",
+        )
 
     def __load_config(self, config_file, auth_token, access_point):
         if auth_token and access_point:
@@ -60,7 +70,7 @@ class HomematicIPCollector(object):
                 self.__config.access_point, self.__config.auth_token
             )
             await self.__home_client.get_current_state_async()
-            await self.__home_client.enable_events(self.__log_event)
+            await self.__home_client.enable_events(self.__process_event)
             await self.__periodic_collection()
         except Exception as e:
             logging.fatal(
@@ -68,13 +78,37 @@ class HomematicIPCollector(object):
             )
             sys.exit(1)
 
-    async def __log_event(self, message):
+    async def __process_event(self, message):
         try:
+            self.__event_byte_counter.inc(len(message))
             data = json.loads(message)
             events = data.get("events", {})
             for event in events.values():
                 event_type = event.get("pushEventType")
                 logging.info(f"Received Event: {event_type} | {message}")
+
+                # Extract device info if available
+                device_id = ""
+                device_label = ""
+
+                # Check different event structures for device info
+                if "device" in event:
+                    device_id = event["device"].get("id", "")
+                    device_label = event["device"].get("label", "")
+                elif "id" in event: # Some events like DEVICE_REMOVED just have an ID
+                    device_id = event["id"]
+                    # Try to lookup label if possible, though async_home might have already removed it
+                    if self.__home_client:
+                        device = self.__home_client.search_device_by_id(device_id)
+                        if device:
+                            device_label = device.label
+
+                self.__event_counter.labels(
+                    type=event_type,
+                    id=device_id,
+                    label=device_label
+                ).inc()
+
         except Exception as e:
             logging.error("Error logging event: %s", e)
 
