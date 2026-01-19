@@ -43,9 +43,9 @@ class HomematicIPCollector(object):
         self.__load_config(args.config_file, args.auth_token, args.access_point)
         self.__home_client = AsyncHome()
         self.__event_counter = Counter(
-            "hmip_websocket_events_total",
+            "hmip_websocket_events_count_total",
             "Number of events received from HomematicIP WebSocket",
-            ["type", "id", "label"],
+            ["event_type", "id", "label", "type"],
         )
         self.__event_byte_counter = Counter(
             "hmip_websocket_events_bytes_total",
@@ -85,7 +85,8 @@ class HomematicIPCollector(object):
             events = data.get("events", {})
             for event in events.values():
                 event_type = event.get("pushEventType")
-                logging.info(f"Received Event: {event_type} | {message}")
+                # Every event seems to have a type
+                type_ = event.get("type", "")
 
                 # Extract device info if available
                 device_id = ""
@@ -95,6 +96,9 @@ class HomematicIPCollector(object):
                 if "device" in event:
                     device_id = event["device"].get("id", "")
                     device_label = event["device"].get("label", "")
+                elif "group" in event:
+                    device_id = event["group"].get("id", "")
+                    device_label = event["group"].get("label", "")
                 elif "id" in event: # Some events like DEVICE_REMOVED just have an ID
                     device_id = event["id"]
                     # Try to lookup label if possible, though async_home might have already removed it
@@ -103,10 +107,15 @@ class HomematicIPCollector(object):
                         if device:
                             device_label = device.label
 
+                logging.info(
+                    f"Received Event: {event_type} | id: {device_id} | label: {device_label} | type: {type_} | {message}"
+                )
+
                 self.__event_counter.labels(
-                    type=event_type,
+                    event_type=event_type,
                     id=device_id,
-                    label=device_label
+                    label=device_label,
+                    type=type_
                 ).inc()
 
         except Exception as e:
