@@ -75,7 +75,7 @@ class HomematicIPCollector(object):
             events = data.get("events", {})
             for event in events.values():
                 event_type = event.get("pushEventType")
-                logging.info(f"Received Event: {event_type} | Payload: {json.dumps(data, indent=2)}")
+                logging.info(f"Received Event: {event_type} | {message}")
         except Exception as e:
             logging.error("Error logging event: %s", e)
 
@@ -192,6 +192,12 @@ class HomematicIPCollector(object):
         )
         metric_rssi_peer_value = GaugeMetricFamily(
             "hmip_rssi_peer_value", "RSSI peer value", labels=labelnames
+        )
+        metric_valve_flow_error = GaugeMetricFamily(
+            "hmip_valve_flow_error", "Valve Flow Error", labels=labelnames
+        )
+        metric_valve_water_error = GaugeMetricFamily(
+            "hmip_valve_water_error", "Valve Water Error", labels=labelnames
         )
 
         try:
@@ -322,6 +328,20 @@ class HomematicIPCollector(object):
                                     [g.label, d.label],
                                     d.valveProtectionSwitchingInterval,
                                 )
+                            if (
+                                hasattr(d, "valveFlowError")
+                                and d.valveFlowError is not None
+                            ):
+                                metric_valve_flow_error.add_metric(
+                                    [g.label, d.label], int(d.valveFlowError)
+                                )
+                            if (
+                                hasattr(d, "valveWaterError")
+                                and d.valveWaterError is not None
+                            ):
+                                metric_valve_water_error.add_metric(
+                                    [g.label, d.label], int(d.valveWaterError)
+                                )
                             for channel in d.functionalChannels:
                                 if isinstance(
                                     channel, FloorTerminalBlockMechanicChannel
@@ -359,6 +379,8 @@ class HomematicIPCollector(object):
             yield metric_rssi_device_value
             yield metric_rssi_peer_value
             yield metric_last_status_update
+            yield metric_valve_flow_error
+            yield metric_valve_water_error
             yield metric_device_info
 
         except Exception as e:
@@ -399,7 +421,7 @@ if __name__ == "__main__":
     )
     parser.add_argument(
         "--rest-sync-interval",
-        default=os.environ.get("REST_SYNC_INTERVAL", 300),
+        default=os.environ.get("REST_SYNC_INTERVAL", 600),
         help="interval in seconds to sync state via REST API",
     )
 
