@@ -1,6 +1,5 @@
 import argparse
 import sys
-import time
 import logging
 import homematicip
 import prometheus_client
