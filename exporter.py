@@ -5,8 +5,9 @@ import logging
 import homematicip
 import prometheus_client
 import asyncio
+import json
 from prometheus_client.core import GaugeMetricFamily
-from homematicip.home import Home
+from homematicip.async_home import AsyncHome
 from homematicip.device import WallMountedThermostatPro, FloorTerminalBlock12
 from homematicip.base.functionalChannels import FloorTerminalBlockMechanicChannel
 
@@ -30,6 +31,8 @@ class HomematicIPCollector(object):
         self.__home_client = None
         self.__metric_port = int(args.metric_port)
         self.__log_level = int(args.log_level)
+        self.__rest_sync_interval = int(args.rest_sync_interval)
+        self.__config = None
 
         logging.info(
             "using config file '{}' and exposing metrics on port '{}'".format(
@@ -37,11 +40,12 @@ class HomematicIPCollector(object):
             )
         )
 
-        self.__init_client(args.config_file, args.auth_token, args.access_point)
+        self.__load_config(args.config_file, args.auth_token, args.access_point)
+        self.__home_client = AsyncHome()
 
-    def __init_client(self, config_file, auth_token, access_point):
+    def __load_config(self, config_file, auth_token, access_point):
         if auth_token and access_point:
-            config = homematicip.HmipConfig(
+            self.__config = homematicip.HmipConfig(
                 auth_token=auth_token,
                 access_point=access_point,
                 log_level=self.__log_level,
@@ -49,27 +53,39 @@ class HomematicIPCollector(object):
                 raw_config=None,
             )
         else:
-            config = homematicip.load_config_file(config_file=config_file)
+            self.__config = homematicip.load_config_file(config_file=config_file)
 
+    async def start(self):
         try:
-            # We need an event loop for the async methods in the homematicip library.
-            # Even though we are not using async/await in this exporter, the library
-            # uses asyncio internally (see homematicip/base/homematicip_object.py _run_non_async)
-            # and expects a running loop to execute its tasks.
-            try:
-                loop = asyncio.get_running_loop()
-            except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-
-            self.__home_client = Home()
-            self.__home_client.init(config.access_point)
-            self.__home_client.set_auth_token(config.auth_token)
+            await self.__home_client.init_async(
+                self.__config.access_point, self.__config.auth_token
+            )
+            await self.__home_client.get_current_state_async()
+            await self.__home_client.enable_events(self.__log_event)
+            await self.__periodic_collection()
         except Exception as e:
             logging.fatal(
                 "Initializing HomematicIP client failed with: {}".format(str(e))
             )
             sys.exit(1)
+
+    async def __log_event(self, message):
+        try:
+            data = json.loads(message)
+            events = data.get("events", {})
+            for event in events.values():
+                event_type = event.get("pushEventType")
+                logging.info(f"Received Event: {event_type} | Payload: {json.dumps(data, indent=2)}")
+        except Exception as e:
+            logging.error("Error logging event: %s", e)
+
+    async def __periodic_collection(self):
+        while True:
+            try:
+                await asyncio.sleep(self.__rest_sync_interval)
+                await self.__home_client.get_current_state_async()
+            except Exception as e:
+                logging.warning("Periodic collection failed: %s", e)
 
     def collect(self):
         """
@@ -179,15 +195,6 @@ class HomematicIPCollector(object):
         )
 
         try:
-            # Create a new event loop for this thread if one doesn't exist
-            try:
-                loop = asyncio.get_running_loop()
-            except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-
-            self.__home_client.get_current_state()
-
             # Weather Info
             if self.__home_client.weather:
                 w = self.__home_client.weather
@@ -390,6 +397,11 @@ if __name__ == "__main__":
     parser.add_argument(
         "--log-level", default=os.environ.get("LOG_LEVEL", 30), help="log level"
     )
+    parser.add_argument(
+        "--rest-sync-interval",
+        default=os.environ.get("REST_SYNC_INTERVAL", 300),
+        help="interval in seconds to sync state via REST API",
+    )
 
     args = parser.parse_args()
 
@@ -399,8 +411,10 @@ if __name__ == "__main__":
         prometheus_client.REGISTRY.register(collector)
         prometheus_client.start_http_server(int(args.metric_port))
         logging.info("Prometheus exporter started on port {}".format(args.metric_port))
-        while True:
-            time.sleep(1)
+        asyncio.run(collector.start())
+        # The start method will now run indefinitely
+        # while True:
+        #    time.sleep(1)
     except Exception as e:
         logging.fatal("Failed to start exporter: {}".format(str(e)))
         sys.exit(1)
