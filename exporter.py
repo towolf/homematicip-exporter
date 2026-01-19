@@ -4,7 +4,6 @@ import logging
 import homematicip
 import prometheus_client
 import asyncio
-import json
 from prometheus_client import Counter
 from prometheus_client.core import GaugeMetricFamily
 from homematicip.async_home import AsyncHome
@@ -64,13 +63,17 @@ class HomematicIPCollector(object):
         else:
             self.__config = homematicip.load_config_file(config_file=config_file)
 
+    async def __process_raw_message(self, message):
+        self.__event_byte_counter.inc(len(str(message)))
+
     async def start(self):
         try:
             await self.__home_client.init_async(
                 self.__config.access_point, self.__config.auth_token
             )
             await self.__home_client.get_current_state_async()
-            await self.__home_client.enable_events(self.__process_event)
+            self.__home_client.onEvent += self.__process_event
+            await self.__home_client.enable_events(additional_message_handler=self.__process_raw_message)
             await self.__periodic_collection()
         except Exception as e:
             logging.fatal(
@@ -78,38 +81,34 @@ class HomematicIPCollector(object):
             )
             sys.exit(1)
 
-    async def __process_event(self, message):
-        try:
-            self.__event_byte_counter.inc(len(message))
-            data = json.loads(message)
-            events = data.get("events", {})
-            for event in events.values():
-                event_type = event.get("pushEventType")
-                # Every event seems to have a type
-                type_ = event.get("type", "")
+    def __process_event(self, event_list):
+        for event in event_list:
+            print("EventType: {} Data: {}".format(event["eventType"], event["data"]))
+
+            try:
+                event_type = event["eventType"]
+                event_data = event["data"]
 
                 # Extract device info if available
                 device_id = ""
                 device_label = ""
+                type_ = ""
 
-                # Check different event structures for device info
-                if "device" in event:
-                    device_id = event["device"].get("id", "")
-                    device_label = event["device"].get("label", "")
-                elif "group" in event:
-                    device_id = event["group"].get("id", "")
-                    device_label = event["group"].get("label", "")
-                elif "id" in event: # Some events like DEVICE_REMOVED just have an ID
-                    device_id = event["id"]
-                    # Try to lookup label if possible, though async_home might have already removed it
-                    if self.__home_client:
-                        device = self.__home_client.search_device_by_id(device_id)
-                        if device:
-                            device_label = device.label
+                if isinstance(event_data, dict):
+                    if "device" in event_data:
+                         device_id = event_data["device"].get("id", "")
+                         device_label = event_data["device"].get("label", "")
+                    elif "group" in event_data:
+                         device_id = event_data["group"].get("id", "")
+                         device_label = event_data["group"].get("label", "")
+                    elif "id" in event_data:
+                         device_id = event_data["id"]
+                         if self.__home_client:
+                             device = self.__home_client.search_device_by_id(device_id)
+                             if device:
+                                 device_label = device.label
 
-                logging.info(
-                    f"Received Event: {event_type} | id: {device_id} | label: {device_label} | type: {type_} | {message}"
-                )
+                    type_ = event_data.get("type", "")
 
                 self.__event_counter.labels(
                     event_type=event_type,
@@ -118,8 +117,8 @@ class HomematicIPCollector(object):
                     type=type_
                 ).inc()
 
-        except Exception as e:
-            logging.error("Error logging event: %s", e)
+            except Exception as e:
+                logging.error("Error logging event: %s", e)
 
     async def __periodic_collection(self):
         while True:
