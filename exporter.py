@@ -83,7 +83,7 @@ class HomematicIPCollector(object):
 
     def __process_event(self, event_list):
         for event in event_list:
-            print("EventType: {} Data: {}".format(event["eventType"], event["data"]))
+            logging.info("EventType: {} Data: {}".format(event["eventType"], event["data"]))
 
             try:
                 event_type = event["eventType"]
