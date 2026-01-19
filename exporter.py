@@ -87,34 +87,27 @@ class HomematicIPCollector(object):
 
             try:
                 event_type = event["eventType"]
-                event_data = event["data"]
+                obj = event["data"]
 
                 # Extract device info if available
-                device_id = ""
-                device_label = ""
-                type_ = ""
+                _id = ""
+                _label = ""
+                _type = ""
 
-                if isinstance(event_data, dict):
-                    if "device" in event_data:
-                         device_id = event_data["device"].get("id", "")
-                         device_label = event_data["device"].get("label", "")
-                    elif "group" in event_data:
-                         device_id = event_data["group"].get("id", "")
-                         device_label = event_data["group"].get("label", "")
-                    elif "id" in event_data:
-                         device_id = event_data["id"]
-                         if self.__home_client:
-                             device = self.__home_client.search_device_by_id(device_id)
-                             if device:
-                                 device_label = device.label
-
-                    type_ = event_data.get("type", "")
+                if hasattr(obj, "id"):
+                     _id = obj.id
+                if hasattr(obj, "label"):
+                     _label = obj.label
+                if hasattr(obj, "modelType"):
+                     _type = obj.modelType
+                elif hasattr(obj, "groupType"):
+                     _type = obj.groupType
 
                 self.__event_counter.labels(
                     event_type=event_type,
-                    id=device_id,
-                    label=device_label,
-                    type=type_
+                    id=_id,
+                    label=_label,
+                    type=_type
                 ).inc()
 
             except Exception as e:
