@@ -1,10 +1,17 @@
 # HomematicIP Prometheus Exporter
 
-Code forked from https://github.com/auhlig/homematicip-exporter as an
-exercise in vibe coding.
+Code forked from
+[auhlig/homematicip-exporter](https://github.com/auhlig/homematicip-exporter)
+as an -exercise in vibe coding.. This fork introduces significant architectural
+changes, modernizes the stack, and refines the metrics exposed.
 
-I stripped some code for devices I don't have, updated to the latest
-HmIP library and added some stuff.
+### Key Differences from Upstream
+
+**Architecture & Core**
+*   **Real-time Updates**: Implemented a WebSocket listener to receive events instantly, bypassing REST API rate limits and removing the need for frequent polling.
+*   **Modern Stack**: Updated to Python 3.14 and the latest `homematicip` library.
+*   **On-demand Collection**: Refactored the collector to receive data from Websocket with periodic synchronization from the HmIP REST API.
+*   **Cleanup**: Removed code for devices I don't have
 
 The image is ghcr.io/towolf/homematicip-exporter
 
