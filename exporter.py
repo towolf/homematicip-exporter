@@ -234,6 +234,16 @@ class HomematicIPCollector(object):
         metric_valve_water_error = GaugeMetricFamily(
             "hmip_valve_water_error", "Valve Water Error", labels=labelnames
         )
+        metric_minimum_floor_heating_valve_position = GaugeMetricFamily(
+            "hmip_minimum_floor_heating_valve_position",
+            "Minimum Floor Heating Valve Position",
+            labels=labelnames,
+        )
+        metric_dew_point_alarm_active = GaugeMetricFamily(
+            "hmip_dew_point_alarm_active",
+            "Dew Point Alarm Active",
+            labels=labelnames + ["channel", "channel_name"],
+        )
 
         try:
             # Weather Info
@@ -377,6 +387,15 @@ class HomematicIPCollector(object):
                                 metric_valve_water_error.add_metric(
                                     [g.label, d.label], int(d.valveWaterError)
                                 )
+                            if (
+                                hasattr(d, "minimumFloorHeatingValvePosition")
+                                and d.minimumFloorHeatingValvePosition is not None
+                            ):
+                                metric_minimum_floor_heating_valve_position.add_metric(
+                                    [g.label, d.label],
+                                    d.minimumFloorHeatingValvePosition,
+                                )
+
                             for channel in d.functionalChannels:
                                 if isinstance(
                                     channel, FloorTerminalBlockMechanicChannel
@@ -390,6 +409,19 @@ class HomematicIPCollector(object):
                                                 channel.label,
                                             ],
                                             channel.valvePosition,
+                                        )
+                                    if (
+                                        hasattr(channel, "dewPointAlarmActive")
+                                        and channel.dewPointAlarmActive is not None
+                                    ):
+                                        metric_dew_point_alarm_active.add_metric(
+                                            [
+                                                g.label,
+                                                d.label,
+                                                str(channel.index),
+                                                channel.label,
+                                            ],
+                                            int(channel.dewPointAlarmActive),
                                         )
 
             yield metric_temperature_actual
@@ -416,6 +448,8 @@ class HomematicIPCollector(object):
             yield metric_last_status_update
             yield metric_valve_flow_error
             yield metric_valve_water_error
+            yield metric_minimum_floor_heating_valve_position
+            yield metric_dew_point_alarm_active
             yield metric_device_info
 
         except Exception as e:
